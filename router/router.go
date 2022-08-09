@@ -18,25 +18,56 @@ func NewRouter() *chi.Mux {
 	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Server is running"))
 	})
-	r.Get("/user/login", login)
+	r.Get("/user/login", newHandlerFunction(login))
 
 	return r
 }
 
-func login(w http.ResponseWriter, r *http.Request) {
+type httpResponse struct {
+	Code   int         `json:"-"`
+	Error  string      `json:"error"`
+	Result interface{} `json:"result"`
+}
+
+type handlerFunction func(w http.ResponseWriter, r *http.Request) (*httpResponse, error)
+
+func newHandlerFunction(h handlerFunction) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		response, err := h(w, r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError) //TODO stop leaking internal error messages
+			return
+		}
+		responseJson, err := json.Marshal(response)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError) //TODO stop leaking internal error messages
+			return
+		}
+		w.Write([]byte(responseJson))
+		w.WriteHeader(response.Code)
+
+	}
+}
+
+func login(w http.ResponseWriter, r *http.Request) (*httpResponse, error) {
 	var loginRequest users.LoginRequest
 	err := json.NewDecoder(r.Body).Decode(&loginRequest)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return &httpResponse{
+			Code:   http.StatusBadRequest,
+			Error:  err.Error(),
+			Result: nil,
+		}, nil
 	}
 
 	err = users.Login(loginRequest)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
+		return nil, err
 	}
-	w.Write([]byte("success"))
-	w.WriteHeader(http.StatusAccepted)
-	return
+
+	return &httpResponse{
+		Code:   http.StatusAccepted,
+		Error:  "",
+		Result: nil,
+	}, nil
 }
