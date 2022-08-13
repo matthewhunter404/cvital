@@ -18,7 +18,7 @@ func NewRouter() *chi.Mux {
 	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Server is running"))
 	})
-	r.Get("/user/login", newHandlerFunction(login))
+	r.Get("/user/login", handlerFunction(login))
 
 	return r
 }
@@ -29,9 +29,9 @@ type httpResponse struct {
 	Result interface{} `json:"result"`
 }
 
-type handlerFunction func(w http.ResponseWriter, r *http.Request) (*httpResponse, error)
+type httpHandler func(w http.ResponseWriter, r *http.Request) (*httpResponse, error)
 
-func newHandlerFunction(h handlerFunction) http.HandlerFunc {
+func handlerFunction(h httpHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		response, err := h(w, r)
 		if err != nil {
