@@ -23,6 +23,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("DB migrations failed: %v", err)
 	}
+
 	log.Println("Starting Server...")
-	http.ListenAndServe(":3000", router.NewRouter())
+	server := router.Server{
+		DB: newDb,
+	}
+
+	http.ListenAndServe(":3000", router.NewRouter(&server))
 }

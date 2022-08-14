@@ -7,9 +7,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/jmoiron/sqlx"
 )
 
-func NewRouter() *chi.Mux {
+func NewRouter(s *Server) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
@@ -18,7 +19,7 @@ func NewRouter() *chi.Mux {
 	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Server is running"))
 	})
-	r.Get("/user/login", handlerFunction(login))
+	r.Get("/user/login", handlerFunction(s.login))
 
 	return r
 }
@@ -49,7 +50,11 @@ func handlerFunction(h httpHandler) http.HandlerFunc {
 	}
 }
 
-func login(r *http.Request) (*httpResponse, error) {
+type Server struct {
+	DB *sqlx.DB
+}
+
+func (s *Server) login(r *http.Request) (*httpResponse, error) {
 	var loginRequest users.LoginRequest
 	err := json.NewDecoder(r.Body).Decode(&loginRequest)
 	if err != nil {
