@@ -6,7 +6,7 @@ services:
     ports:
       - 5432:5432
     environment:
-      POSTGRES_USERNAME: cvital
+      POSTGRES_USER: cvital
       POSTGRES_PASSWORD: cvital
       POSTGRES_DB: cvital
     volumes:
