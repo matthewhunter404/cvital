@@ -29,11 +29,11 @@ type httpResponse struct {
 	Result interface{} `json:"result"`
 }
 
-type httpHandler func(w http.ResponseWriter, r *http.Request) (*httpResponse, error)
+type httpHandler func(r *http.Request) (*httpResponse, error)
 
 func handlerFunction(h httpHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		response, err := h(w, r)
+		response, err := h(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError) //TODO stop leaking internal error messages
 			return
@@ -49,7 +49,7 @@ func handlerFunction(h httpHandler) http.HandlerFunc {
 	}
 }
 
-func login(w http.ResponseWriter, r *http.Request) (*httpResponse, error) {
+func login(r *http.Request) (*httpResponse, error) {
 	var loginRequest users.LoginRequest
 	err := json.NewDecoder(r.Body).Decode(&loginRequest)
 	if err != nil {
