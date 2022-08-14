@@ -21,6 +21,7 @@ type DatabaseConfig struct {
 }
 
 func NewConnection(config DatabaseConfig) (*sqlx.DB, error) {
+	//TODO This doesn't throw an error if the DB connection isn't available?
 	var connectionString = "host=" + config.Host +
 		" port=" + config.Port +
 		" user=" + config.User +

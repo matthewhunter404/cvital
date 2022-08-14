@@ -8,16 +8,20 @@ import (
 )
 
 func main() {
-	_, err := db.NewConnection(db.DatabaseConfig{
-		Host:     "cvital",
+	newDb, err := db.NewConnection(db.DatabaseConfig{
+		Host:     "localhost",
 		Port:     "5432",
 		User:     "cvital",
 		DbName:   "cvital",
 		Password: "cvital",
-		SslMode:  "false",
+		SslMode:  "disable",
 	})
 	if err != nil {
-		log.Fatalf("DB connection failed")
+		log.Fatalf("DB connection failed: %v", err)
+	}
+	err = db.RunMigrations(newDb)
+	if err != nil {
+		log.Fatalf("DB migrations failed: %v", err)
 	}
 	log.Println("Starting Server...")
 	http.ListenAndServe(":3000", router.NewRouter())
