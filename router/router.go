@@ -1,13 +1,13 @@
 package router
 
 import (
+	"cvital/db"
 	"cvital/domain/users"
 	"encoding/json"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/jmoiron/sqlx"
 )
 
 func NewRouter(s *Server) *chi.Mux {
@@ -20,7 +20,7 @@ func NewRouter(s *Server) *chi.Mux {
 		w.Write([]byte("Server is running"))
 	})
 	r.Get("/user/login", handlerFunction(s.login))
-
+	r.Post("/user", handlerFunction(s.createUser))
 	return r
 }
 
@@ -51,7 +51,8 @@ func handlerFunction(h httpHandler) http.HandlerFunc {
 }
 
 type Server struct {
-	DB *sqlx.DB
+	DB           *db.PostgresDB
+	UsersUseCase users.UseCase
 }
 
 func (s *Server) login(r *http.Request) (*httpResponse, error) {
@@ -65,7 +66,7 @@ func (s *Server) login(r *http.Request) (*httpResponse, error) {
 		}, nil
 	}
 
-	err = users.Login(loginRequest)
+	err = s.UsersUseCase.Login(r.Context(), loginRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -74,5 +75,28 @@ func (s *Server) login(r *http.Request) (*httpResponse, error) {
 		Code:   http.StatusAccepted,
 		Error:  "",
 		Result: nil,
+	}, nil
+}
+
+func (s *Server) createUser(r *http.Request) (*httpResponse, error) {
+	var request users.CreateUserRequest
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		return &httpResponse{
+			Code:   http.StatusBadRequest,
+			Error:  err.Error(),
+			Result: nil,
+		}, nil
+	}
+
+	newUser, err := s.UsersUseCase.CreateUser(r.Context(), request)
+	if err != nil {
+		return nil, err
+	}
+
+	return &httpResponse{
+		Code:   http.StatusAccepted,
+		Error:  "",
+		Result: newUser,
 	}, nil
 }

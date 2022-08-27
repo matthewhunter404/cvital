@@ -2,6 +2,7 @@ package main
 
 import (
 	"cvital/db"
+	"cvital/domain/users"
 	"cvital/router"
 	"log"
 	"net/http"
@@ -19,14 +20,17 @@ func main() {
 	if err != nil {
 		log.Fatalf("DB connection failed: %v", err)
 	}
-	err = db.RunMigrations(newDb)
+	err = db.RunMigrations(newDb.DB)
 	if err != nil {
 		log.Fatalf("DB migrations failed: %v", err)
 	}
 
+	usersUseCase := users.NewUseCase(*newDb)
+
 	log.Println("Starting Server...")
 	server := router.Server{
-		DB: newDb,
+		DB:           newDb,
+		UsersUseCase: usersUseCase,
 	}
 
 	http.ListenAndServe(":3000", router.NewRouter(&server))

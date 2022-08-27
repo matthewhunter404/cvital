@@ -20,7 +20,11 @@ type DatabaseConfig struct {
 	SslMode  string
 }
 
-func NewConnection(config DatabaseConfig) (*sqlx.DB, error) {
+type PostgresDB struct {
+	*sqlx.DB
+}
+
+func NewConnection(config DatabaseConfig) (*PostgresDB, error) {
 	//TODO This doesn't throw an error if the DB connection isn't available?
 	var connectionString = "host=" + config.Host +
 		" port=" + config.Port +
@@ -34,7 +38,11 @@ func NewConnection(config DatabaseConfig) (*sqlx.DB, error) {
 		return nil, err
 	}
 
-	return db, nil
+	postgresDB := &PostgresDB{
+		db,
+	}
+
+	return postgresDB, nil
 }
 
 func RunMigrations(db *sqlx.DB) error {

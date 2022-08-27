@@ -1,22 +1,57 @@
 package users
 
-import "fmt"
+import (
+	"context"
+	"cvital/db"
+	"fmt"
+)
+
+type useCase struct {
+	DB db.PostgresDB
+}
+
+type UseCase interface {
+	CreateUser(ctx context.Context, req CreateUserRequest) (*User, error)
+	Login(ctx context.Context, req LoginRequest) error
+}
+
+func NewUseCase(db db.PostgresDB) UseCase {
+	return &useCase{
+		DB: db,
+	}
+}
 
 type User struct {
-	FullName          string
-	EncryptedPassword string
-	EmailAddress      string
+	FullName          string `json:"full_name"`
+	EncryptedPassword string `json:"-"`
+	EmailAddress      string `json:"email"`
 }
 
 type CreateUserRequest struct {
-	FullName     string
-	Password     string
-	EmailAddress string
+	FullName string `json:"full_name"`
+	Password string `json:"password"`
+	Email    string `json:"email"`
 }
 
-func CreateUser(req CreateUserRequest) error {
+func (u *useCase) CreateUser(ctx context.Context, req CreateUserRequest) (*User, error) {
 
-	return nil
+	dbRequest := db.CreateUserRequest{
+		FullName:          req.FullName,
+		EncryptedPassword: req.Password,
+		EmailAddress:      req.Email,
+	}
+	user, err := u.DB.CreateUser(ctx, dbRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	newUser := User{
+		FullName:          user.FullName,
+		EncryptedPassword: user.EncryptedPassword,
+		EmailAddress:      user.EmailAddress,
+	}
+
+	return &newUser, nil
 }
 
 type LoginRequest struct {
@@ -24,7 +59,7 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-func Login(req LoginRequest) error {
+func (u *useCase) Login(ctx context.Context, req LoginRequest) error {
 	//Stub
 	if req.Email == "admin@email.com" && req.Password == "1234abcd" {
 		return nil
