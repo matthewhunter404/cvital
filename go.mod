@@ -7,4 +7,5 @@ require (
 	github.com/jmoiron/sqlx v1.3.5 // indirect
 	github.com/lib/pq v1.10.6 // indirect
 	github.com/pressly/goose/v3 v3.6.1 // indirect
+	golang.org/x/crypto v0.0.0-20220826181053-bd7e27e6170d // indirect
 )

@@ -35,11 +35,17 @@ type CreateUserRequest struct {
 
 func (u *useCase) CreateUser(ctx context.Context, req CreateUserRequest) (*User, error) {
 
+	hashedPassword, err := HashPassword(req.Password)
+	if err != nil {
+		return nil, err
+	}
+
 	dbRequest := db.CreateUserRequest{
 		FullName:          req.FullName,
-		EncryptedPassword: req.Password,
+		EncryptedPassword: hashedPassword,
 		EmailAddress:      req.Email,
 	}
+
 	user, err := u.DB.CreateUser(ctx, dbRequest)
 	if err != nil {
 		return nil, err
