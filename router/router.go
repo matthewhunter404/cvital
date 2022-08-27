@@ -13,6 +13,7 @@ import (
 func NewRouter(s *Server) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+	r.Use(middleware.AllowContentType("application/json"))
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Hello people of the world!"))
 	})
@@ -44,8 +45,9 @@ func handlerFunction(h httpHandler) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError) //TODO stop leaking internal error messages
 			return
 		}
-		w.Write([]byte(responseJson))
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(response.Code)
+		w.Write(responseJson)
 
 	}
 }
