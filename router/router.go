@@ -57,6 +57,10 @@ type Server struct {
 	UsersUseCase users.UseCase
 }
 
+type loginResult struct {
+	JWT string `json:"jwt"`
+}
+
 func (s *Server) login(r *http.Request) (*httpResponse, error) {
 	var loginRequest users.LoginRequest
 	err := json.NewDecoder(r.Body).Decode(&loginRequest)
@@ -78,9 +82,11 @@ func (s *Server) login(r *http.Request) (*httpResponse, error) {
 	}
 
 	return &httpResponse{
-		Code:   http.StatusAccepted,
-		Error:  "",
-		Result: jwt,
+		Code:  http.StatusAccepted,
+		Error: "",
+		Result: loginResult{
+			JWT: *jwt,
+		},
 	}, nil
 }
 

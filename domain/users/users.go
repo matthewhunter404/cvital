@@ -70,7 +70,7 @@ func (u *useCase) Login(ctx context.Context, req LoginRequest) (*string, error) 
 
 	user, err := u.DB.GetUserByEmail(ctx, req.Email)
 	if err != nil {
-		log.Printf("User login request failed as user does not exist", err)
+		log.Printf("GetUserByEmail error: %v", err)
 		return nil, fmt.Errorf("login failed")
 	}
 
@@ -78,6 +78,11 @@ func (u *useCase) Login(ctx context.Context, req LoginRequest) (*string, error) 
 	if !passwordCorrect {
 		return nil, fmt.Errorf("login failed")
 	}
-	JWTStub := "LoginSuccessfulJWT"
-	return &JWTStub, nil
+
+	//TODO should this be set using SetCookie on the http response rather than passed back in the body?
+	jwt, err := CreateJWT(req.Email)
+	if err != nil {
+		return nil, fmt.Errorf("login failed")
+	}
+	return jwt, nil
 }
