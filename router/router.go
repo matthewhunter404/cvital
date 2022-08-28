@@ -68,15 +68,19 @@ func (s *Server) login(r *http.Request) (*httpResponse, error) {
 		}, nil
 	}
 
-	err = s.UsersUseCase.Login(r.Context(), loginRequest)
+	jwt, err := s.UsersUseCase.Login(r.Context(), loginRequest)
 	if err != nil {
-		return nil, err
+		return &httpResponse{
+			Code:   http.StatusUnauthorized,
+			Error:  "",
+			Result: "Login Failed, incorrect username or password",
+		}, nil
 	}
 
 	return &httpResponse{
 		Code:   http.StatusAccepted,
 		Error:  "",
-		Result: nil,
+		Result: jwt,
 	}, nil
 }
 

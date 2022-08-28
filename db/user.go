@@ -1,6 +1,9 @@
 package db
 
-import "context"
+import (
+	"context"
+	"log"
+)
 
 type User struct {
 	ID                uint   `db:"id"`
@@ -10,9 +13,9 @@ type User struct {
 }
 
 type CreateUserRequest struct {
-	FullName          string `db:"full_name"`
-	EncryptedPassword string `db:"encrypted_password"`
-	EmailAddress      string `db:"email_address"`
+	FullName          string
+	EncryptedPassword string
+	EmailAddress      string
 }
 
 func (d PostgresDB) CreateUser(ctx context.Context, req CreateUserRequest) (*User, error) {
@@ -30,5 +33,16 @@ func (d PostgresDB) CreateUser(ctx context.Context, req CreateUserRequest) (*Use
 		EncryptedPassword: req.EncryptedPassword,
 		EmailAddress:      req.EmailAddress,
 	}
+	return &user, nil
+}
+
+func (d PostgresDB) GetUserByEmail(ctx context.Context, emailAddress string) (*User, error) {
+	sqlStatement := `SELECT id, full_name, encrypted_password, email_address FROM cv_user WHERE email_address = $1`
+	var user User
+	err := d.GetContext(ctx, &user, sqlStatement, emailAddress)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("user: %v", user)
 	return &user, nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"cvital/db"
 	"fmt"
+	"log"
 )
 
 type useCase struct {
@@ -12,7 +13,7 @@ type useCase struct {
 
 type UseCase interface {
 	CreateUser(ctx context.Context, req CreateUserRequest) (*User, error)
-	Login(ctx context.Context, req LoginRequest) error
+	Login(ctx context.Context, req LoginRequest) (*string, error)
 }
 
 func NewUseCase(db db.PostgresDB) UseCase {
@@ -65,10 +66,18 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-func (u *useCase) Login(ctx context.Context, req LoginRequest) error {
-	//Stub
-	if req.Email == "admin@email.com" && req.Password == "1234abcd" {
-		return nil
+func (u *useCase) Login(ctx context.Context, req LoginRequest) (*string, error) {
+
+	user, err := u.DB.GetUserByEmail(ctx, req.Email)
+	if err != nil {
+		log.Printf("User login request failed as user does not exist", err)
+		return nil, fmt.Errorf("login failed")
 	}
-	return fmt.Errorf("user does not exist")
+
+	passwordCorrect := CheckPasswordHash(req.Password, user.EncryptedPassword)
+	if !passwordCorrect {
+		return nil, fmt.Errorf("login failed")
+	}
+	JWTStub := "LoginSuccessfulJWT"
+	return &JWTStub, nil
 }
