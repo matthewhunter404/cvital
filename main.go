@@ -1,21 +1,29 @@
 package main
 
 import (
+	"cvital/config"
 	"cvital/db"
 	"cvital/domain/users"
 	"cvital/router"
+	"fmt"
 	"log"
 	"net/http"
 )
 
 func main() {
+
+	config, err := config.ReadConfig()
+	if err != nil {
+		log.Fatalf("Reading config file failed: %v", err)
+	}
+
 	newDb, err := db.NewConnection(db.DatabaseConfig{
-		Host:     "localhost",
-		Port:     "5432",
-		User:     "cvital",
-		DbName:   "cvital",
-		Password: "cvital",
-		SslMode:  "disable",
+		Host:     config.Database.Host,
+		Port:     config.Database.Port,
+		User:     config.Database.User,
+		DbName:   config.Database.Name,
+		Password: config.Database.Password,
+		SslMode:  config.Database.SslMode,
 	})
 	if err != nil {
 		log.Fatalf("DB connection failed: %v", err)
@@ -25,7 +33,7 @@ func main() {
 		log.Fatalf("DB migrations failed: %v", err)
 	}
 
-	usersUseCase := users.NewUseCase(*newDb)
+	usersUseCase := users.NewUseCase(*newDb, config.JWTKey)
 
 	log.Println("Starting Server...")
 	server := router.Server{
@@ -33,5 +41,5 @@ func main() {
 		UsersUseCase: usersUseCase,
 	}
 
-	http.ListenAndServe(":3000", router.NewRouter(&server))
+	http.ListenAndServe(fmt.Sprintf(":%d", config.Server.Port), router.NewRouter(&server))
 }

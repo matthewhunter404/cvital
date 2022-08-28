@@ -8,7 +8,8 @@ import (
 )
 
 type useCase struct {
-	DB db.PostgresDB
+	db     db.PostgresDB
+	jwtKey string
 }
 
 type UseCase interface {
@@ -16,9 +17,10 @@ type UseCase interface {
 	Login(ctx context.Context, req LoginRequest) (*string, error)
 }
 
-func NewUseCase(db db.PostgresDB) UseCase {
+func NewUseCase(db db.PostgresDB, jwtKey string) UseCase {
 	return &useCase{
-		DB: db,
+		db:     db,
+		jwtKey: jwtKey,
 	}
 }
 
@@ -47,7 +49,7 @@ func (u *useCase) CreateUser(ctx context.Context, req CreateUserRequest) (*User,
 		EmailAddress:      req.Email,
 	}
 
-	user, err := u.DB.CreateUser(ctx, dbRequest)
+	user, err := u.db.CreateUser(ctx, dbRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +70,7 @@ type LoginRequest struct {
 
 func (u *useCase) Login(ctx context.Context, req LoginRequest) (*string, error) {
 
-	user, err := u.DB.GetUserByEmail(ctx, req.Email)
+	user, err := u.db.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		log.Printf("GetUserByEmail error: %v", err)
 		return nil, fmt.Errorf("login failed")
@@ -80,7 +82,7 @@ func (u *useCase) Login(ctx context.Context, req LoginRequest) (*string, error) 
 	}
 
 	//TODO should this be set using SetCookie on the http response rather than passed back in the body?
-	jwt, err := CreateJWT(req.Email)
+	jwt, err := u.CreateJWT(req.Email)
 	if err != nil {
 		return nil, fmt.Errorf("login failed")
 	}

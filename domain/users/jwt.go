@@ -7,14 +7,13 @@ import (
 )
 
 // Create the JWT key used to create the signature
-var jwtKey = []byte("my_secret_key")
 
 type Claims struct {
 	Email string `json:"email"`
 	jwt.StandardClaims
 }
 
-func CreateJWT(email string) (*string, error) {
+func (u *useCase) CreateJWT(email string) (*string, error) {
 	expirationTime := time.Now().Add(5 * time.Minute)
 	claims := &Claims{
 		Email: email,
@@ -24,7 +23,7 @@ func CreateJWT(email string) (*string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(jwtKey)
+	tokenString, err := token.SignedString(u.jwtKey)
 	if err != nil {
 		return nil, err
 	}
