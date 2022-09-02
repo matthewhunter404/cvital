@@ -19,7 +19,7 @@ type CreateUserRequest struct {
 }
 
 func (d PostgresDB) CreateUser(ctx context.Context, req CreateUserRequest) (*User, error) {
-	sqlStatement := `INSERT INTO cv_user (full_name, encrypted_password, email_address) VALUES ($1, $2, $3) RETURNING id`
+	sqlStatement := `INSERT INTO cvital_user (full_name, encrypted_password, email_address) VALUES ($1, $2, $3) RETURNING id`
 
 	var id uint
 	err := d.QueryRowContext(ctx, sqlStatement, req.FullName, req.EncryptedPassword, req.EmailAddress).Scan(&id)
@@ -37,7 +37,7 @@ func (d PostgresDB) CreateUser(ctx context.Context, req CreateUserRequest) (*Use
 }
 
 func (d PostgresDB) GetUserByEmail(ctx context.Context, emailAddress string) (*User, error) {
-	sqlStatement := `SELECT id, full_name, encrypted_password, email_address FROM cv_user WHERE email_address = $1`
+	sqlStatement := `SELECT id, full_name, encrypted_password, email_address FROM cvital_user WHERE email_address = $1`
 	var user User
 	err := d.GetContext(ctx, &user, sqlStatement, emailAddress)
 	if err != nil {

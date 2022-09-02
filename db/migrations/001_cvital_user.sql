@@ -1,5 +1,5 @@
 -- +goose Up
-CREATE TABLE cv_user (
+CREATE TABLE cvital_user (
     id SERIAL PRIMARY KEY,
     full_name VARCHAR(50) NOT NULL,
     encrypted_password VARCHAR(100),
