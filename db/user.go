@@ -18,7 +18,7 @@ type CreateUserRequest struct {
 	EmailAddress      string
 }
 
-func (d PostgresDB) CreateUser(ctx context.Context, req CreateUserRequest) (*User, error) {
+func (d *PostgresDB) CreateUser(ctx context.Context, req CreateUserRequest) (*User, error) {
 	sqlStatement := `INSERT INTO cvital_user (full_name, encrypted_password, email_address) VALUES ($1, $2, $3) RETURNING id`
 
 	var id uint
@@ -36,7 +36,7 @@ func (d PostgresDB) CreateUser(ctx context.Context, req CreateUserRequest) (*Use
 	return &user, nil
 }
 
-func (d PostgresDB) GetUserByEmail(ctx context.Context, emailAddress string) (*User, error) {
+func (d *PostgresDB) GetUserByEmail(ctx context.Context, emailAddress string) (*User, error) {
 	sqlStatement := `SELECT id, full_name, encrypted_password, email_address FROM cvital_user WHERE email_address = $1`
 	var user User
 	err := d.GetContext(ctx, &user, sqlStatement, emailAddress)

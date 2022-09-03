@@ -14,7 +14,7 @@ type CVProfile struct {
 	PassportNumber string `db:"passport_number"`
 }
 
-type CreateCVProfile struct {
+type CreateCVProfileRequest struct {
 	CvitalUserID   uint
 	CVText         string
 	FirstNames     string
@@ -23,7 +23,7 @@ type CreateCVProfile struct {
 	PassportNumber string
 }
 
-func (d PostgresDB) CreateCVProfile(ctx context.Context, req CreateCVProfile) (*CVProfile, error) {
+func (d *PostgresDB) CreateCVProfile(ctx context.Context, req CreateCVProfileRequest) (*CVProfile, error) {
 	sqlStatement := `INSERT INTO cv_profile (cvital_user_id, cv_text, first_names, surname, id_number, passport_number) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
 
 	var id uint
@@ -43,7 +43,7 @@ func (d PostgresDB) CreateCVProfile(ctx context.Context, req CreateCVProfile) (*
 	return &cvProfile, nil
 }
 
-func (d PostgresDB) GetCVProfileByUserID(ctx context.Context, cvitalUserID uint) (*CVProfile, error) {
+func (d *PostgresDB) GetCVProfileByUserID(ctx context.Context, cvitalUserID uint) (*CVProfile, error) {
 	sqlStatement := `SELECT id, cvital_user_id, cv_text, first_names, surname, id_number, passport_number FROM cv_profile WHERE cvital_user_id = $1`
 	var cvProfile CVProfile
 	err := d.GetContext(ctx, &cvProfile, sqlStatement, cvitalUserID)
