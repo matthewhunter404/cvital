@@ -21,7 +21,7 @@ type DatabaseConfig struct {
 }
 
 type PostgresDB struct {
-	*sqlx.DB
+	sqlxDB *sqlx.DB
 }
 
 func NewConnection(config DatabaseConfig) (*PostgresDB, error) {
@@ -45,14 +45,14 @@ func NewConnection(config DatabaseConfig) (*PostgresDB, error) {
 	return postgresDB, nil
 }
 
-func RunMigrations(db *sqlx.DB) error {
+func RunMigrations(db *PostgresDB) error {
 	goose.SetBaseFS(embedMigrations)
 
 	if err := goose.SetDialect("postgres"); err != nil {
 		return err
 	}
 
-	if err := goose.Up(db.DB, "migrations"); err != nil {
+	if err := goose.Up(db.sqlxDB.DB, "migrations"); err != nil {
 		return err
 	}
 	return nil

@@ -29,7 +29,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("DB connection failed: %v", err)
 	}
-	err = db.RunMigrations(newDb.DB)
+	err = db.RunMigrations(newDb)
 	if err != nil {
 		log.Fatalf("DB migrations failed: %v", err)
 	}
