@@ -2,6 +2,7 @@ package router
 
 import (
 	"cvital/db"
+	"cvital/domain/profiles"
 	"cvital/domain/users"
 	"encoding/json"
 	"net/http"
@@ -22,6 +23,7 @@ func NewRouter(s *Server) *chi.Mux {
 	})
 	r.Get("/user/login", handlerFunction(s.login))
 	r.Post("/user", handlerFunction(s.createUser))
+	r.Post("/cvprofile", handlerFunction(s.createCVProfile))
 	return r
 }
 
@@ -53,12 +55,16 @@ func handlerFunction(h httpHandler) http.HandlerFunc {
 }
 
 type Server struct {
-	DB           *db.PostgresDB
-	UsersUseCase users.UseCase
+	DB              *db.PostgresDB
+	UsersUseCase    users.UseCase
+	ProfilesUseCase profiles.UseCase
 }
 
+// https://www.rfc-editor.org/rfc/rfc6749#section-5.1
 type loginResult struct {
-	JWT string `json:"jwt"`
+	AccessToken string `json:"access_token"`
+	TokenType   string `json:"token_type"`
+	ExpiresIn   string `json:"expires_in"`
 }
 
 func (s *Server) login(r *http.Request) (*httpResponse, error) {
@@ -72,7 +78,7 @@ func (s *Server) login(r *http.Request) (*httpResponse, error) {
 		}, nil
 	}
 
-	jwt, err := s.UsersUseCase.Login(r.Context(), loginRequest)
+	jwt, expiryTime, err := s.UsersUseCase.Login(r.Context(), loginRequest)
 	if err != nil {
 		return &httpResponse{
 			Code:   http.StatusUnauthorized,
@@ -85,7 +91,9 @@ func (s *Server) login(r *http.Request) (*httpResponse, error) {
 		Code:  http.StatusAccepted,
 		Error: "",
 		Result: loginResult{
-			JWT: *jwt,
+			AccessToken: *jwt,
+			TokenType:   "jwt",
+			ExpiresIn:   expiryTime.Format("2006-01-02 15:04:05"),
 		},
 	}, nil
 }
@@ -102,6 +110,46 @@ func (s *Server) createUser(r *http.Request) (*httpResponse, error) {
 	}
 
 	newUser, err := s.UsersUseCase.CreateUser(r.Context(), request)
+	if err != nil {
+		return nil, err
+	}
+
+	return &httpResponse{
+		Code:   http.StatusAccepted,
+		Error:  "",
+		Result: newUser,
+	}, nil
+}
+
+func (s *Server) createCVProfile(r *http.Request) (*httpResponse, error) {
+	var request profiles.CreateCVProfileRequest
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		return &httpResponse{
+			Code:   http.StatusBadRequest,
+			Error:  err.Error(),
+			Result: nil,
+		}, nil
+	}
+	tokenString := r.Header.Get("Authorization")
+	if tokenString == "" {
+		return &httpResponse{
+			Code:   http.StatusBadRequest,
+			Error:  "JWT missing from request headers",
+			Result: nil,
+		}, nil
+	}
+
+	claims, err := s.UsersUseCase.ValidateToken(tokenString)
+	if err != nil {
+		return &httpResponse{
+			Code:   http.StatusUnauthorized,
+			Error:  err.Error(),
+			Result: nil,
+		}, nil
+	}
+
+	newUser, err := s.ProfilesUseCase.CreateCVProfile(r.Context(), request, claims.Email)
 	if err != nil {
 		return nil, err
 	}

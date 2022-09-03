@@ -3,6 +3,7 @@ package main
 import (
 	"cvital/config"
 	"cvital/db"
+	"cvital/domain/profiles"
 	"cvital/domain/users"
 	"cvital/router"
 	"fmt"
@@ -34,11 +35,12 @@ func main() {
 	}
 
 	usersUseCase := users.NewUseCase(*newDb, config.JWTKey)
-
+	profilesUseCase := profiles.NewUseCase(*newDb)
 	log.Println("Starting Server...")
 	server := router.Server{
-		DB:           newDb,
-		UsersUseCase: usersUseCase,
+		DB:              newDb,
+		UsersUseCase:    usersUseCase,
+		ProfilesUseCase: profilesUseCase,
 	}
 
 	http.ListenAndServe(fmt.Sprintf(":%d", config.Server.Port), router.NewRouter(&server))

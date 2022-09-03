@@ -12,7 +12,7 @@ type useCase struct {
 }
 
 type UseCase interface {
-	CreateCVProfile(ctx context.Context, req CreateCVProfileRequest, cvitalUserID uint) (*CVProfile, error)
+	CreateCVProfile(ctx context.Context, req CreateCVProfileRequest, userEmail string) (*CVProfile, error)
 }
 
 func NewUseCase(db db.PostgresDB) UseCase {
@@ -39,9 +39,15 @@ type CreateCVProfileRequest struct {
 	PassportNumber string `json:"passport_number"`
 }
 
-func (u *useCase) CreateCVProfile(ctx context.Context, req CreateCVProfileRequest, cvitalUserID uint) (*CVProfile, error) {
+func (u *useCase) CreateCVProfile(ctx context.Context, req CreateCVProfileRequest, userEmail string) (*CVProfile, error) {
+
+	user, err := u.db.GetUserByEmail(ctx, userEmail)
+	if err != nil {
+		return nil, err
+	}
+
 	dbRequest := db.CreateCVProfileRequest{
-		CvitalUserID:   cvitalUserID,
+		CvitalUserID:   user.ID,
 		CVText:         req.CVText,
 		FirstNames:     req.FirstNames,
 		Surname:        req.Surname,

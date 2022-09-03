@@ -5,6 +5,7 @@ import (
 	"cvital/db"
 	"fmt"
 	"log"
+	"time"
 )
 
 type useCase struct {
@@ -14,7 +15,9 @@ type useCase struct {
 
 type UseCase interface {
 	CreateUser(ctx context.Context, req CreateUserRequest) (*User, error)
-	Login(ctx context.Context, req LoginRequest) (*string, error)
+	Login(ctx context.Context, req LoginRequest) (*string, *time.Time, error)
+	ValidateToken(tokenString string) (*Claims, error)
+	CreateJWT(email string) (*string, *time.Time, error)
 }
 
 func NewUseCase(db db.PostgresDB, jwtKey string) UseCase {
@@ -68,23 +71,24 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-func (u *useCase) Login(ctx context.Context, req LoginRequest) (*string, error) {
+func (u *useCase) Login(ctx context.Context, req LoginRequest) (*string, *time.Time, error) {
 
 	user, err := u.db.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		log.Printf("GetUserByEmail error: %v", err)
-		return nil, fmt.Errorf("login failed")
+		return nil, nil, fmt.Errorf("login failed")
 	}
 
 	passwordCorrect := CheckPasswordHash(req.Password, user.EncryptedPassword)
 	if !passwordCorrect {
-		return nil, fmt.Errorf("login failed")
+		log.Printf("Password incorrect: %v \n", err)
+		return nil, nil, fmt.Errorf("login failed")
 	}
 
-	//TODO should this be set using SetCookie on the http response rather than passed back in the body?
-	jwt, err := u.CreateJWT(req.Email)
+	jwt, expiyTime, err := u.CreateJWT(req.Email)
 	if err != nil {
-		return nil, fmt.Errorf("login failed")
+		log.Printf("CreateJWT failed: %v \n", err)
+		return nil, nil, fmt.Errorf("login failed")
 	}
-	return jwt, nil
+	return jwt, expiyTime, nil
 }
