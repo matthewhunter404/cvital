@@ -131,11 +131,12 @@ func (s *Server) createCVProfile(r *http.Request) (*httpResponse, error) {
 			Result: nil,
 		}, nil
 	}
-	tokenString := r.Header.Get("Authorization")
-	if tokenString == "" {
+
+	tokenString, err := users.GetTokenFromBearerAuth(r.Header.Get("Authorization"))
+	if err != nil {
 		return &httpResponse{
 			Code:   http.StatusBadRequest,
-			Error:  "JWT missing from request headers",
+			Error:  "missing or invalid Authorization header, expecting Bearer Auth token",
 			Result: nil,
 		}, nil
 	}

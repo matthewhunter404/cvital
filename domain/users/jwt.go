@@ -52,3 +52,10 @@ func (u *useCase) ValidateToken(tokenString string) (*Claims, error) {
 
 	return claims, nil
 }
+
+func GetTokenFromBearerAuth(bearerAuth string) (string, error) {
+	if !(bearerAuth[:7] == "Bearer ") {
+		return "", fmt.Errorf("invalid bearer token format")
+	}
+	return bearerAuth[7:], nil
+}
