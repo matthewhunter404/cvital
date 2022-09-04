@@ -34,6 +34,7 @@ func (d *PostgresDB) CreateCVProfile(ctx context.Context, req CreateCVProfileReq
 
 	cvProfile := CVProfile{
 		ID:             id,
+		CvitalUserID:   req.CvitalUserID,
 		CVText:         req.CVText,
 		FirstNames:     req.FirstNames,
 		Surname:        req.Surname,
