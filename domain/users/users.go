@@ -3,6 +3,7 @@ package users
 import (
 	"context"
 	"cvital/db"
+	"cvital/domain"
 	"fmt"
 	"log"
 	"time"
@@ -43,7 +44,7 @@ func (u *useCase) CreateUser(ctx context.Context, req CreateUserRequest) (*User,
 
 	hashedPassword, err := HashPassword(req.Password)
 	if err != nil {
-		return nil, err
+		return nil, domain.WrapError(domain.ErrInternal, err)
 	}
 
 	dbRequest := db.CreateUserRequest{
@@ -54,7 +55,12 @@ func (u *useCase) CreateUser(ctx context.Context, req CreateUserRequest) (*User,
 
 	user, err := u.db.CreateUser(ctx, dbRequest)
 	if err != nil {
-		return nil, err
+		switch err {
+		case db.ErrUniqueViolation:
+			return nil, domain.ErrAlreadyExists
+		default:
+			return nil, domain.WrapError(domain.ErrInternal, err)
+		}
 	}
 
 	newUser := User{
@@ -76,19 +82,19 @@ func (u *useCase) Login(ctx context.Context, req LoginRequest) (*string, *time.T
 	user, err := u.db.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		log.Printf("GetUserByEmail error: %v", err)
-		return nil, nil, fmt.Errorf("login failed")
+		return nil, nil, domain.WrapError(domain.ErrLoginFailed, err)
 	}
 
 	passwordCorrect := CheckPasswordHash(req.Password, user.EncryptedPassword)
 	if !passwordCorrect {
-		log.Printf("Password incorrect: %v \n", err)
-		return nil, nil, fmt.Errorf("login failed")
+		log.Printf("Password incorrect\n")
+		return nil, nil, domain.WrapError(domain.ErrLoginFailed, fmt.Errorf("Invalid Password"))
 	}
 
-	jwt, expiyTime, err := u.CreateJWT(req.Email)
+	jwt, expiryTime, err := u.CreateJWT(req.Email)
 	if err != nil {
 		log.Printf("CreateJWT failed: %v \n", err)
-		return nil, nil, fmt.Errorf("login failed")
+		return nil, nil, domain.WrapError(domain.ErrLoginFailed, err)
 	}
-	return jwt, expiyTime, nil
+	return jwt, expiryTime, nil
 }

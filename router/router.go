@@ -2,9 +2,12 @@ package router
 
 import (
 	"cvital/db"
+	"cvital/domain"
 	"cvital/domain/profiles"
 	"cvital/domain/users"
 	"encoding/json"
+	"errors"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -80,16 +83,20 @@ func (s *Server) login(r *http.Request) (*httpResponse, error) {
 
 	jwt, expiryTime, err := s.UsersUseCase.Login(r.Context(), loginRequest)
 	if err != nil {
-		return &httpResponse{
-			Code:   http.StatusUnauthorized,
-			Error:  "",
-			Result: "Login Failed, incorrect username or password",
-		}, nil
+		switch {
+		case errors.Is(err, domain.ErrLoginFailed):
+			log.Printf("login failure: %v\n", err)
+			return &httpResponse{
+				Code:  http.StatusUnauthorized,
+				Error: ErrLoginFailed,
+			}, nil
+		default:
+			return nil, err
+		}
 	}
 
 	return &httpResponse{
-		Code:  http.StatusAccepted,
-		Error: "",
+		Code: http.StatusAccepted,
 		Result: loginResult{
 			AccessToken: *jwt,
 			TokenType:   "jwt",
@@ -111,7 +118,15 @@ func (s *Server) createUser(r *http.Request) (*httpResponse, error) {
 
 	newUser, err := s.UsersUseCase.CreateUser(r.Context(), request)
 	if err != nil {
-		return nil, err
+		switch err {
+		case domain.ErrAlreadyExists:
+			return &httpResponse{
+				Code:  http.StatusBadRequest,
+				Error: ErrAlreadyExists,
+			}, nil
+		default:
+			return nil, err
+		}
 	}
 
 	return &httpResponse{
@@ -152,12 +167,19 @@ func (s *Server) createCVProfile(r *http.Request) (*httpResponse, error) {
 
 	newUser, err := s.ProfilesUseCase.CreateCVProfile(r.Context(), request, claims.Email)
 	if err != nil {
-		return nil, err
+		switch err {
+		case domain.ErrAlreadyExists:
+			return &httpResponse{
+				Code:  http.StatusBadRequest,
+				Error: ErrAlreadyExists,
+			}, nil
+		default:
+			return nil, err
+		}
 	}
 
 	return &httpResponse{
 		Code:   http.StatusAccepted,
-		Error:  "",
 		Result: newUser,
 	}, nil
 }

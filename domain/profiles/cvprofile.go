@@ -3,8 +3,7 @@ package profiles
 import (
 	"context"
 	"cvital/db"
-	"fmt"
-	"log"
+	"cvital/domain"
 )
 
 type useCase struct {
@@ -43,7 +42,12 @@ func (u *useCase) CreateCVProfile(ctx context.Context, req CreateCVProfileReques
 
 	user, err := u.db.GetUserByEmail(ctx, userEmail)
 	if err != nil {
-		return nil, err
+		switch err {
+		case db.ErrNotFound:
+			return nil, domain.ErrNotFound
+		default:
+			return nil, domain.WrapError(domain.ErrInternal, err)
+		}
 	}
 
 	dbRequest := db.CreateCVProfileRequest{
@@ -57,7 +61,12 @@ func (u *useCase) CreateCVProfile(ctx context.Context, req CreateCVProfileReques
 
 	newCVProfile, err := u.db.CreateCVProfile(ctx, dbRequest)
 	if err != nil {
-		return nil, err
+		switch err {
+		case db.ErrUniqueViolation:
+			return nil, domain.ErrAlreadyExists
+		default:
+			return nil, domain.WrapError(domain.ErrInternal, err)
+		}
 	}
 
 	cvProfile := CVProfile{
@@ -77,8 +86,12 @@ func (u *useCase) GetUserCVProfile(ctx context.Context, userID uint) (*CVProfile
 
 	storedProfile, err := u.db.GetCVProfileByUserID(ctx, userID)
 	if err != nil {
-		log.Printf("GetCVProfileByUserID error: %v", err)
-		return nil, fmt.Errorf("Internal Error")
+		switch err {
+		case db.ErrNotFound:
+			return nil, domain.ErrNotFound
+		default:
+			return nil, domain.WrapError(domain.ErrInternal, err)
+		}
 	}
 
 	cvProfile := CVProfile(*storedProfile)
