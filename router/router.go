@@ -42,11 +42,22 @@ func handlerFunction(h httpHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		response, err := h(r)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError) //TODO stop leaking internal error messages
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			responseJson, err := json.Marshal(httpResponse{
+				Error: ErrInternal,
+			})
+			if err != nil {
+				log.Printf("Error marshalling json response: %v", err)
+				http.Error(w, err.Error(), http.StatusInternalServerError) //TODO stop leaking internal error messages
+				return
+			}
+			w.Write(responseJson)
 			return
 		}
 		responseJson, err := json.Marshal(response)
 		if err != nil {
+			log.Printf("Error marshalling json response: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError) //TODO stop leaking internal error messages
 			return
 		}
