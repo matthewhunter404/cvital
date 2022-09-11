@@ -2,7 +2,8 @@ package db
 
 import (
 	"context"
-	"log"
+
+	"github.com/lib/pq"
 )
 
 type User struct {
@@ -24,7 +25,12 @@ func (d *PostgresDB) CreateUser(ctx context.Context, req CreateUserRequest) (*Us
 	var id uint
 	err := d.sqlxDB.QueryRowContext(ctx, sqlStatement, req.FullName, req.EncryptedPassword, req.EmailAddress).Scan(&id)
 	if err != nil {
-		return nil, err
+		if sqlxDBErr, ok := err.(*pq.Error); ok {
+			if sqlxDBErr.Code.Name() == "case_not_found" {
+				return nil, ErrNotFound
+			}
+		}
+		return nil, WrapError(ErrInternal, err)
 	}
 
 	user := User{
@@ -41,8 +47,13 @@ func (d *PostgresDB) GetUserByEmail(ctx context.Context, emailAddress string) (*
 	var user User
 	err := d.sqlxDB.GetContext(ctx, &user, sqlStatement, emailAddress)
 	if err != nil {
-		return nil, err
+		if sqlxDBErr, ok := err.(*pq.Error); ok {
+			if sqlxDBErr.Code.Name() == "case_not_found" {
+				return nil, ErrNotFound
+			}
+		}
+		return nil, WrapError(ErrInternal, err)
 	}
-	log.Printf("user: %v", user)
+
 	return &user, nil
 }

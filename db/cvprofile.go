@@ -2,6 +2,9 @@ package db
 
 import (
 	"context"
+
+	"github.com/lib/pq"
+	_ "github.com/lib/pq"
 )
 
 type CVProfile struct {
@@ -29,7 +32,12 @@ func (d *PostgresDB) CreateCVProfile(ctx context.Context, req CreateCVProfileReq
 	var id uint
 	err := d.sqlxDB.QueryRowContext(ctx, sqlStatement, req.CvitalUserID, req.CVText, req.FirstNames, req.Surname, req.IDNumber, req.PassportNumber).Scan(&id)
 	if err != nil {
-		return nil, err
+		if sqlxDBErr, ok := err.(*pq.Error); ok {
+			if sqlxDBErr.Code.Name() == "unique_violation" {
+				return nil, ErrUniqueViolation
+			}
+		}
+		return nil, WrapError(ErrInternal, err)
 	}
 
 	cvProfile := CVProfile{
@@ -49,7 +57,12 @@ func (d *PostgresDB) GetCVProfileByUserID(ctx context.Context, cvitalUserID uint
 	var cvProfile CVProfile
 	err := d.sqlxDB.GetContext(ctx, &cvProfile, sqlStatement, cvitalUserID)
 	if err != nil {
-		return nil, err
+		if sqlxDBErr, ok := err.(*pq.Error); ok {
+			if sqlxDBErr.Code.Name() == "case_not_found" {
+				return nil, ErrNotFound
+			}
+		}
+		return nil, WrapError(ErrInternal, err)
 	}
 	return &cvProfile, nil
 }
