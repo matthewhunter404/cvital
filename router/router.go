@@ -7,12 +7,19 @@ import (
 	"cvital/domain/users"
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/rs/zerolog"
 )
+
+type Server struct {
+	DB              *db.PostgresDB
+	UsersUseCase    users.UseCase
+	ProfilesUseCase profiles.UseCase
+	Logger          zerolog.Logger
+}
 
 func NewRouter(s *Server) *chi.Mux {
 	r := chi.NewRouter()
@@ -24,9 +31,9 @@ func NewRouter(s *Server) *chi.Mux {
 	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Server is running"))
 	})
-	r.Get("/user/login", handlerFunction(s.login))
-	r.Post("/user", handlerFunction(s.createUser))
-	r.Post("/cvprofile", handlerFunction(s.createCVProfile))
+	r.Get("/user/login", s.handlerFunction(s.login))
+	r.Post("/user", s.handlerFunction(s.createUser))
+	r.Post("/cvprofile", s.handlerFunction(s.createCVProfile))
 	return r
 }
 
@@ -38,7 +45,7 @@ type httpResponse struct {
 
 type httpHandler func(r *http.Request) (*httpResponse, error)
 
-func handlerFunction(h httpHandler) http.HandlerFunc {
+func (s *Server) handlerFunction(h httpHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		response, err := h(r)
 		if err != nil {
@@ -48,7 +55,7 @@ func handlerFunction(h httpHandler) http.HandlerFunc {
 				Error: ErrInternal,
 			})
 			if err != nil {
-				log.Printf("Error marshalling json response: %v", err)
+				s.Logger.Error().Err(err).Msg("Error marshalling json response")
 				http.Error(w, err.Error(), http.StatusInternalServerError) //TODO stop leaking internal error messages
 				return
 			}
@@ -57,7 +64,7 @@ func handlerFunction(h httpHandler) http.HandlerFunc {
 		}
 		responseJson, err := json.Marshal(response)
 		if err != nil {
-			log.Printf("Error marshalling json response: %v", err)
+			s.Logger.Error().Err(err).Msg("Error marshalling json response")
 			http.Error(w, err.Error(), http.StatusInternalServerError) //TODO stop leaking internal error messages
 			return
 		}
@@ -66,12 +73,6 @@ func handlerFunction(h httpHandler) http.HandlerFunc {
 		w.Write(responseJson)
 
 	}
-}
-
-type Server struct {
-	DB              *db.PostgresDB
-	UsersUseCase    users.UseCase
-	ProfilesUseCase profiles.UseCase
 }
 
 // https://www.rfc-editor.org/rfc/rfc6749#section-5.1
@@ -96,7 +97,7 @@ func (s *Server) login(r *http.Request) (*httpResponse, error) {
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrLoginFailed):
-			log.Printf("login failure: %v\n", err)
+			s.Logger.Debug().Err(err).Msg("login failure")
 			return &httpResponse{
 				Code:  http.StatusUnauthorized,
 				Error: ErrLoginFailed,

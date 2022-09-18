@@ -5,13 +5,15 @@ import (
 	"cvital/db"
 	"cvital/domain"
 	"fmt"
-	"log"
 	"time"
+
+	"github.com/rs/zerolog"
 )
 
 type useCase struct {
 	db     db.PostgresDB
 	jwtKey string
+	logger zerolog.Logger
 }
 
 type UseCase interface {
@@ -21,10 +23,11 @@ type UseCase interface {
 	CreateJWT(email string) (*string, *time.Time, error)
 }
 
-func NewUseCase(db db.PostgresDB, jwtKey string) UseCase {
+func NewUseCase(db db.PostgresDB, jwtKey string, logger zerolog.Logger) UseCase {
 	return &useCase{
 		db:     db,
 		jwtKey: jwtKey,
+		logger: logger,
 	}
 }
 
@@ -81,19 +84,19 @@ func (u *useCase) Login(ctx context.Context, req LoginRequest) (*string, *time.T
 
 	user, err := u.db.GetUserByEmail(ctx, req.Email)
 	if err != nil {
-		log.Printf("GetUserByEmail error: %v", err)
+		u.logger.Printf("GetUserByEmail error: %v", err)
 		return nil, nil, domain.WrapError(domain.ErrLoginFailed, err)
 	}
 
 	passwordCorrect := CheckPasswordHash(req.Password, user.EncryptedPassword)
 	if !passwordCorrect {
-		log.Printf("Password incorrect\n")
+		u.logger.Printf("Password incorrect\n")
 		return nil, nil, domain.WrapError(domain.ErrLoginFailed, fmt.Errorf("Invalid Password"))
 	}
 
 	jwt, expiryTime, err := u.CreateJWT(req.Email)
 	if err != nil {
-		log.Printf("CreateJWT failed: %v \n", err)
+		u.logger.Printf("CreateJWT failed: %v \n", err)
 		return nil, nil, domain.WrapError(domain.ErrLoginFailed, err)
 	}
 	return jwt, expiryTime, nil

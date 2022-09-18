@@ -5,17 +5,17 @@ import (
 	"cvital/db"
 	"cvital/domain/profiles"
 	"cvital/domain/users"
+	"cvital/logger"
 	"cvital/router"
 	"fmt"
-	"log"
 	"net/http"
 )
 
 func main() {
-
+	logger := logger.NewLogger()
 	config, err := config.ReadConfig()
 	if err != nil {
-		log.Fatalf("Reading config file failed: %v", err)
+		logger.Fatal().Err(err).Msg("Reading config file failed")
 	}
 
 	newDb, err := db.NewConnection(db.DatabaseConfig{
@@ -25,22 +25,23 @@ func main() {
 		DbName:   config.Database.Name,
 		Password: config.Database.Password,
 		SslMode:  config.Database.SslMode,
-	})
+	}, logger)
 	if err != nil {
-		log.Fatalf("DB connection failed: %v", err)
+		logger.Fatal().Err(err).Msg("DB connection failed")
 	}
 	err = db.RunMigrations(newDb)
 	if err != nil {
-		log.Fatalf("DB migrations failed: %v", err)
+		logger.Fatal().Err(err).Msg("DB migrations failed")
 	}
 
-	usersUseCase := users.NewUseCase(*newDb, config.JWTKey)
-	profilesUseCase := profiles.NewUseCase(*newDb)
-	log.Println("Starting Server...")
+	usersUseCase := users.NewUseCase(*newDb, config.JWTKey, logger)
+	profilesUseCase := profiles.NewUseCase(*newDb, logger)
+	logger.Info().Msg("Starting Server...")
 	server := router.Server{
 		DB:              newDb,
 		UsersUseCase:    usersUseCase,
 		ProfilesUseCase: profilesUseCase,
+		Logger:          logger,
 	}
 
 	http.ListenAndServe(fmt.Sprintf(":%d", config.Server.Port), router.NewRouter(&server))

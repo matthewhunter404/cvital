@@ -4,19 +4,23 @@ import (
 	"context"
 	"cvital/db"
 	"cvital/domain"
+
+	"github.com/rs/zerolog"
 )
 
 type useCase struct {
-	db db.PostgresDB
+	db     db.PostgresDB
+	logger zerolog.Logger
 }
 
 type UseCase interface {
 	CreateCVProfile(ctx context.Context, req CreateCVProfileRequest, userEmail string) (*CVProfile, error)
 }
 
-func NewUseCase(db db.PostgresDB) UseCase {
+func NewUseCase(db db.PostgresDB, logger zerolog.Logger) UseCase {
 	return &useCase{
-		db: db,
+		db:     db,
+		logger: logger,
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"
+	"github.com/rs/zerolog"
 )
 
 //go:embed migrations/*.sql
@@ -22,9 +23,10 @@ type DatabaseConfig struct {
 
 type PostgresDB struct {
 	sqlxDB *sqlx.DB
+	logger zerolog.Logger
 }
 
-func NewConnection(config DatabaseConfig) (*PostgresDB, error) {
+func NewConnection(config DatabaseConfig, logger zerolog.Logger) (*PostgresDB, error) {
 	//TODO This doesn't throw an error if the DB connection isn't available?
 	var connectionString = "host=" + config.Host +
 		" port=" + config.Port +
@@ -39,7 +41,8 @@ func NewConnection(config DatabaseConfig) (*PostgresDB, error) {
 	}
 
 	postgresDB := &PostgresDB{
-		db,
+		sqlxDB: db,
+		logger: logger,
 	}
 
 	return postgresDB, nil
