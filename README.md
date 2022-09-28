@@ -14,7 +14,7 @@ To start running system dependencies, install docker and then:
 docker-compose up -d
 ```
 
-To run the backend:
+To run the backend, first make a copy of config_example.yml rename it to config.yml. Then run:
 ```bash
 go run main.go
 ```
