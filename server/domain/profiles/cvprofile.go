@@ -16,6 +16,7 @@ type useCase struct {
 type UseCase interface {
 	CreateCVProfile(ctx context.Context, req CreateCVProfileRequest, userEmail string) (*CVProfile, error)
 	GetUserCVProfile(ctx context.Context, userEmail string) (*CVProfile, error)
+	UpdateCVProfile(ctx context.Context, req UpdateCVProfileRequest, userEmail string) (*CVProfile, error)
 }
 
 func NewUseCase(db db.PostgresDB, logger zerolog.Logger) UseCase {
@@ -36,6 +37,14 @@ type CVProfile struct {
 }
 
 type CreateCVProfileRequest struct {
+	CVText         string `json:"cv_text"`
+	FirstNames     string `json:"first_names"`
+	Surname        string `json:"surname"`
+	IDNumber       string `json:"id_number"`
+	PassportNumber string `json:"passport_number"`
+}
+
+type UpdateCVProfileRequest struct {
 	CVText         string `json:"cv_text"`
 	FirstNames     string `json:"first_names"`
 	Surname        string `json:"surname"`
@@ -111,6 +120,52 @@ func (u *useCase) GetUserCVProfile(ctx context.Context, userEmail string) (*CVPr
 	}
 
 	cvProfile := CVProfile(*storedProfile)
+
+	return &cvProfile, nil
+}
+
+func (u *useCase) UpdateCVProfile(ctx context.Context, req UpdateCVProfileRequest, userEmail string) (*CVProfile, error) {
+
+	user, err := u.db.GetUserByEmail(ctx, userEmail)
+	if err != nil {
+		switch err {
+		case db.ErrNotFound:
+			return nil, domain.ErrNotFound
+		default:
+			return nil, domain.WrapError(domain.ErrInternal, err)
+		}
+	}
+
+	dbRequest := db.UpdateCVProfileRequest{
+		CvitalUserID:   user.ID,
+		CVText:         req.CVText,
+		FirstNames:     req.FirstNames,
+		Surname:        req.Surname,
+		IDNumber:       req.IDNumber,
+		PassportNumber: req.PassportNumber,
+	}
+
+	updatedCVProfile, err := u.db.UpdateCVProfile(ctx, dbRequest)
+	if err != nil {
+		switch err {
+		case db.ErrUniqueViolation:
+			return nil, domain.ErrAlreadyExists
+		case db.ErrNotFound:
+			return nil, domain.ErrNotFound
+		default:
+			return nil, domain.WrapError(domain.ErrInternal, err)
+		}
+	}
+
+	cvProfile := CVProfile{
+		ID:             updatedCVProfile.ID,
+		CvitalUserID:   updatedCVProfile.CvitalUserID,
+		CVText:         updatedCVProfile.CVText,
+		FirstNames:     updatedCVProfile.FirstNames,
+		Surname:        updatedCVProfile.Surname,
+		IDNumber:       updatedCVProfile.IDNumber,
+		PassportNumber: updatedCVProfile.PassportNumber,
+	}
 
 	return &cvProfile, nil
 }

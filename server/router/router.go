@@ -45,6 +45,7 @@ func NewRouter(s *Server) *chi.Mux {
 	r.Post("/user", s.handlerFunction(s.createUser))
 	r.Post("/cv_profile", s.handlerFunction(s.createCVProfile))
 	r.Get("/cv_profile", s.handlerFunction(s.readCVProfile))
+	r.Put("/cv_profile", s.handlerFunction(s.updateCVProfile))
 	return r
 }
 
@@ -236,7 +237,7 @@ func (s *Server) readCVProfile(r *http.Request) (*httpResponse, error) {
 		}, nil
 	}
 
-	newUser, err := s.ProfilesUseCase.GetUserCVProfile(r.Context(), claims.Email)
+	newCVProfile, err := s.ProfilesUseCase.GetUserCVProfile(r.Context(), claims.Email)
 	if err != nil {
 		switch err {
 		case domain.ErrAlreadyExists:
@@ -251,6 +252,59 @@ func (s *Server) readCVProfile(r *http.Request) (*httpResponse, error) {
 
 	return &httpResponse{
 		Code:   http.StatusAccepted,
-		Result: newUser,
+		Result: newCVProfile,
+	}, nil
+}
+
+func (s *Server) updateCVProfile(r *http.Request) (*httpResponse, error) {
+	var request profiles.UpdateCVProfileRequest
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		return &httpResponse{
+			Code:   http.StatusBadRequest,
+			Error:  err.Error(),
+			Result: nil,
+		}, nil
+	}
+
+	tokenString, err := users.GetTokenFromBearerAuth(r.Header.Get("Authorization"))
+	if err != nil {
+		return &httpResponse{
+			Code:   http.StatusBadRequest,
+			Error:  "missing or invalid Authorization header, expecting Bearer Auth token",
+			Result: nil,
+		}, nil
+	}
+
+	claims, err := s.UsersUseCase.ValidateToken(tokenString)
+	if err != nil {
+		return &httpResponse{
+			Code:   http.StatusUnauthorized,
+			Error:  err.Error(),
+			Result: nil,
+		}, nil
+	}
+
+	updatedCVProfile, err := s.ProfilesUseCase.UpdateCVProfile(r.Context(), request, claims.Email)
+	if err != nil {
+		switch err {
+		case domain.ErrAlreadyExists:
+			return &httpResponse{
+				Code:  http.StatusBadRequest,
+				Error: ErrAlreadyExists,
+			}, nil
+		case domain.ErrNotFound:
+			return &httpResponse{
+				Code:  http.StatusNotFound,
+				Error: ErrNotFound,
+			}, nil
+		default:
+			return nil, err
+		}
+	}
+
+	return &httpResponse{
+		Code:   http.StatusAccepted,
+		Result: updatedCVProfile,
 	}, nil
 }
