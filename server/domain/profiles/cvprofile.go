@@ -15,6 +15,7 @@ type useCase struct {
 
 type UseCase interface {
 	CreateCVProfile(ctx context.Context, req CreateCVProfileRequest, userEmail string) (*CVProfile, error)
+	GetUserCVProfile(ctx context.Context, userEmail string) (*CVProfile, error)
 }
 
 func NewUseCase(db db.PostgresDB, logger zerolog.Logger) UseCase {
@@ -86,9 +87,20 @@ func (u *useCase) CreateCVProfile(ctx context.Context, req CreateCVProfileReques
 	return &cvProfile, nil
 }
 
-func (u *useCase) GetUserCVProfile(ctx context.Context, userID uint) (*CVProfile, error) {
+func (u *useCase) GetUserCVProfile(ctx context.Context, userEmail string) (*CVProfile, error) {
 
-	storedProfile, err := u.db.GetCVProfileByUserID(ctx, userID)
+	//TODO, two DB reads?
+	user, err := u.db.GetUserByEmail(ctx, userEmail)
+	if err != nil {
+		switch err {
+		case db.ErrNotFound:
+			return nil, domain.ErrNotFound
+		default:
+			return nil, domain.WrapError(domain.ErrInternal, err)
+		}
+	}
+
+	storedProfile, err := u.db.GetCVProfileByUserID(ctx, user.ID)
 	if err != nil {
 		switch err {
 		case db.ErrNotFound:

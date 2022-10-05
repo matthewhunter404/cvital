@@ -43,7 +43,8 @@ func NewRouter(s *Server) *chi.Mux {
 	})
 	r.Post("/user/login", s.handlerFunction(s.login))
 	r.Post("/user", s.handlerFunction(s.createUser))
-	r.Post("/cvprofile", s.handlerFunction(s.createCVProfile))
+	r.Post("/cv_profile", s.handlerFunction(s.createCVProfile))
+	r.Get("/cv_profile", s.handlerFunction(s.readCVProfile))
 	return r
 }
 
@@ -188,6 +189,54 @@ func (s *Server) createCVProfile(r *http.Request) (*httpResponse, error) {
 	}
 
 	newUser, err := s.ProfilesUseCase.CreateCVProfile(r.Context(), request, claims.Email)
+	if err != nil {
+		switch err {
+		case domain.ErrAlreadyExists:
+			return &httpResponse{
+				Code:  http.StatusBadRequest,
+				Error: ErrAlreadyExists,
+			}, nil
+		default:
+			return nil, err
+		}
+	}
+
+	return &httpResponse{
+		Code:   http.StatusAccepted,
+		Result: newUser,
+	}, nil
+}
+
+func (s *Server) readCVProfile(r *http.Request) (*httpResponse, error) {
+	var request profiles.CreateCVProfileRequest
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		return &httpResponse{
+			Code:   http.StatusBadRequest,
+			Error:  err.Error(),
+			Result: nil,
+		}, nil
+	}
+
+	tokenString, err := users.GetTokenFromBearerAuth(r.Header.Get("Authorization"))
+	if err != nil {
+		return &httpResponse{
+			Code:   http.StatusBadRequest,
+			Error:  "missing or invalid Authorization header, expecting Bearer Auth token",
+			Result: nil,
+		}, nil
+	}
+
+	claims, err := s.UsersUseCase.ValidateToken(tokenString)
+	if err != nil {
+		return &httpResponse{
+			Code:   http.StatusUnauthorized,
+			Error:  err.Error(),
+			Result: nil,
+		}, nil
+	}
+
+	newUser, err := s.ProfilesUseCase.GetUserCVProfile(r.Context(), claims.Email)
 	if err != nil {
 		switch err {
 		case domain.ErrAlreadyExists:
