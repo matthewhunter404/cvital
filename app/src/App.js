@@ -1,9 +1,9 @@
-import './App.css'
-import LoginForm from './Login'
+import './app.css'
+import LoginForm from './login'
 
 function App() {
     return (
-        <div className="App">
+        <div className="app">
             <LoginForm />
         </div>
     )

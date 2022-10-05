@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
-import './App.css'
+import './app.css'
 import axios from 'axios'
+import {getJwtToken, setJwtToken} from './auth/auth.js'
 
 function LoginForm() {
     const [errorMessages, setErrorMessages] = useState({})
@@ -42,11 +43,13 @@ function LoginForm() {
                 }
             )
             .then((response) => {
-                console.log(response.data)
+                console.log('response.data', response.data)
                 setIsSubmitted(true)
+                setJwtToken(response.data.access_token)
             })
             .catch(function (error) {
                 console.log('Oh no an error', error)
+                console.log('Error response data', error.response.data)
                 setErrorMessages({ name: 'invalid', message: errors.invalid })
             })
     }
