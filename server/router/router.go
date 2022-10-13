@@ -25,6 +25,7 @@ type Server struct {
 func NewRouter(s *Server) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 	r.Use(middleware.AllowContentType("application/json"))
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"},
@@ -43,6 +44,7 @@ func NewRouter(s *Server) *chi.Mux {
 	})
 	r.Post("/user/login", s.handlerFunction(s.login))
 	r.Post("/user", s.handlerFunction(s.createUser))
+	//r.Use(s.authTokenMiddleware)
 	r.Post("/cv_profile", s.handlerFunction(s.createCVProfile))
 	r.Get("/cv_profile", s.handlerFunction(s.readCVProfile))
 	r.Put("/cv_profile", s.handlerFunction(s.updateCVProfile))
@@ -74,17 +76,21 @@ func (s *Server) handlerFunction(h httpHandler) http.HandlerFunc {
 			w.Write(responseJson)
 			return
 		}
-		responseJson, err := json.Marshal(response)
-		if err != nil {
-			s.Logger.Error().Err(err).Msg("Error marshalling json response")
-			http.Error(w, err.Error(), http.StatusInternalServerError) //TODO stop leaking internal error messages
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(response.Code)
-		w.Write(responseJson)
+		s.WriteJsonResponse(w, *response)
 
 	}
+}
+
+func (s *Server) WriteJsonResponse(w http.ResponseWriter, response httpResponse) {
+	responseJson, err := json.Marshal(response)
+	if err != nil {
+		s.Logger.Error().Err(err).Msg("Error marshalling json response")
+		http.Error(w, err.Error(), http.StatusInternalServerError) //TODO stop leaking internal error messages
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.Code)
+	w.Write(responseJson)
 }
 
 // https://www.rfc-editor.org/rfc/rfc6749#section-5.1
