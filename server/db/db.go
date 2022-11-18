@@ -9,6 +9,11 @@ import (
 	"github.com/rs/zerolog"
 )
 
+type CVitalDB interface {
+	CVProfileDB
+	UserDB
+}
+
 //go:embed migrations/*.sql
 var embedMigrations embed.FS
 
@@ -26,7 +31,7 @@ type PostgresDB struct {
 	logger zerolog.Logger
 }
 
-func NewConnection(config DatabaseConfig, logger zerolog.Logger) (*PostgresDB, error) {
+func NewConnection(config DatabaseConfig, logger zerolog.Logger) (CVitalDB, error) {
 	//TODO This doesn't throw an error if the DB connection isn't available?
 	var connectionString = "host=" + config.Host +
 		" port=" + config.Port +

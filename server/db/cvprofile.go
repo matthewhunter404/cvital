@@ -8,6 +8,12 @@ import (
 	_ "github.com/lib/pq"
 )
 
+type CVProfileDB interface {
+	CreateCVProfile(ctx context.Context, req CreateCVProfileRequest) (*CVProfile, error)
+	GetCVProfileByUserID(ctx context.Context, cvitalUserID uint) (*CVProfile, error)
+	UpdateCVProfile(ctx context.Context, req UpdateCVProfileRequest) (*CVProfile, error)
+}
+
 type CVProfile struct {
 	ID             uint   `db:"id"`
 	CvitalUserID   uint   `db:"cvital_user_id"`

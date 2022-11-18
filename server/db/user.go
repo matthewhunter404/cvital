@@ -7,6 +7,11 @@ import (
 	"github.com/lib/pq"
 )
 
+type UserDB interface {
+	CreateUser(ctx context.Context, req CreateUserRequest) (*User, error)
+	GetUserByEmail(ctx context.Context, emailAddress string) (*User, error)
+}
+
 type User struct {
 	ID                uint   `db:"id"`
 	FullName          string `db:"full_name"`
