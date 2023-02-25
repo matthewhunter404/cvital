@@ -16,7 +16,7 @@ import (
 )
 
 type Server struct {
-	DB              *db.PostgresDB
+	DB              db.CVitalDB
 	UsersUseCase    users.UseCase
 	ProfilesUseCase profiles.UseCase
 	Logger          zerolog.Logger

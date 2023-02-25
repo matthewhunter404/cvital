@@ -11,7 +11,7 @@ import (
 )
 
 type useCase struct {
-	db     db.PostgresDB
+	db     db.CVitalDB
 	jwtKey string
 	logger zerolog.Logger
 }
@@ -23,7 +23,7 @@ type UseCase interface {
 	CreateJWT(email string) (*string, *time.Time, error)
 }
 
-func NewUseCase(db db.PostgresDB, jwtKey string, logger zerolog.Logger) UseCase {
+func NewUseCase(db db.CVitalDB, jwtKey string, logger zerolog.Logger) UseCase {
 	return &useCase{
 		db:     db,
 		jwtKey: jwtKey,

@@ -29,13 +29,9 @@ func main() {
 	if err != nil {
 		logger.Fatal().Err(err).Msg("DB connection failed")
 	}
-	err = db.RunMigrations(newDb)
-	if err != nil {
-		logger.Fatal().Err(err).Msg("DB migrations failed")
-	}
 
-	usersUseCase := users.NewUseCase(*newDb, config.JWTKey, logger)
-	profilesUseCase := profiles.NewUseCase(*newDb, logger)
+	usersUseCase := users.NewUseCase(newDb, config.JWTKey, logger)
+	profilesUseCase := profiles.NewUseCase(newDb, logger)
 	logger.Info().Msg("Starting Server...")
 	server := router.Server{
 		DB:              newDb,

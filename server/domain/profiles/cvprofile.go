@@ -9,7 +9,7 @@ import (
 )
 
 type useCase struct {
-	db     db.PostgresDB
+	db     db.CVitalDB
 	logger zerolog.Logger
 }
 
@@ -19,7 +19,7 @@ type UseCase interface {
 	UpdateCVProfile(ctx context.Context, req UpdateCVProfileRequest, userEmail string) (*CVProfile, error)
 }
 
-func NewUseCase(db db.PostgresDB, logger zerolog.Logger) UseCase {
+func NewUseCase(db db.CVitalDB, logger zerolog.Logger) UseCase {
 	return &useCase{
 		db:     db,
 		logger: logger,

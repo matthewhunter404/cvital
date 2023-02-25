@@ -2,6 +2,7 @@ package db
 
 import (
 	"embed"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -50,10 +51,15 @@ func NewConnection(config DatabaseConfig, logger zerolog.Logger) (CVitalDB, erro
 		logger: logger,
 	}
 
+	err = runMigrations(postgresDB)
+	if err != nil {
+		return nil, fmt.Errorf("DB migrations failed: %v", err)
+	}
+
 	return postgresDB, nil
 }
 
-func RunMigrations(db *PostgresDB) error {
+func runMigrations(db *PostgresDB) error {
 	goose.SetBaseFS(embedMigrations)
 
 	if err := goose.SetDialect("postgres"); err != nil {
