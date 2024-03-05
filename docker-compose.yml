@@ -1,6 +1,17 @@
 version: "3.9"
 
 services:
+  cvital:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: cvital
+    ports:
+      - "3000:3000"
+    environment:
+      atlas_dns_sector_id: 1
+      atlas_dns_port: 3000
+
   postgres:
     image: postgres
     ports:
