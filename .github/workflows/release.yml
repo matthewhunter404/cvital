@@ -16,7 +16,7 @@ jobs:
       actions: write
     steps:
       - name: Build binary
-        working-directory: lambdas
+        working-directory: .
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o build/ms-cae.amd64 main.go
       - name: Create release
         id: create
