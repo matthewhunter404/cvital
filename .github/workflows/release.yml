@@ -20,6 +20,10 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '1.22'
+      - name: Set Environment Variables
+        run: echo "TAGMESSAGE=$(git tag -l --format='%(contents)' ${{github.ref_name}})" >> $GITHUB_ENV
+      - name: Echo ENV variable
+        run: echo "The value of TAGMESSAGE is $TAGMESSAGE"
       - name: Build binary
         working-directory: server
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ms-cae.amd64 main.go
