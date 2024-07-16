@@ -25,9 +25,11 @@ jobs:
       - name: Set Environment Variables
         run: echo "TAGMESSAGE=$(git tag -l --format='%(contents:subject)' ${{github.ref_name}})" >> $GITHUB_ENV
       - name: Set Environment Variables 2
-        run: echo "TAGVERSION=$(${{ github.ref_name }}//./-)" >> $GITHUB_ENV
+        run: echo "TAGVERSION=${{ github.ref_name }}" >> $GITHUB_ENV
+      - name: Set Environment Variables 2
+        run: echo "TAGVERSIONCLEAN=$($TAGVERSION//./-)" >> $GITHUB_ENV
       - name: Echo
-        run: echo "The value of TAGVERSION is $TAGVERSION"        
+        run: echo "The value of TAGVERSIONCLEAN is $TAGVERSIONCLEAN"        
       - name: Build binary
         working-directory: server
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ms-cae.amd64 main.go
