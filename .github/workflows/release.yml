@@ -27,7 +27,7 @@ jobs:
       - name: Set Environment Variables 2
         run: echo "TAGVERSION=${{ github.ref_name }}" >> $GITHUB_ENV
       - name: Set Environment Variables 2
-        run: echo "TAGVERSIONCLEAN=$($TAGVERSION//./-)" >> $GITHUB_ENV
+        run: echo "TAGVERSIONCLEAN=${$TAGVERSION//./-}" >> $GITHUB_ENV
       - name: Echo
         run: echo "The value of TAGVERSIONCLEAN is $TAGVERSIONCLEAN"        
       - name: Build binary
