@@ -29,11 +29,11 @@ jobs:
       - name: Set Environment Variables 2
         run: echo "TAGVERSIONCLEAN=${TAGVERSION//./-}" >> $GITHUB_ENV
       - name: Set Environment Variables 2
-        run: echo "GITHUBREFCLEAN=${GITHUB_REF//./-}" >> $GITHUB_ENV
+        run: echo "GITHUBREFNAMECLEAN=${GITHUB_REF_NAME//./-}" >> $GITHUB_ENV
       - name: Echo
         run: echo "The value of TAGVERSIONCLEAN is $TAGVERSIONCLEAN"        
       - name: Echo
-        run: echo "The value of GITHUBREFCLEAN is $GITHUBREFCLEAN"    
+        run: echo "The value of GITHUBREFNAMECLEAN is $GITHUBREFNAMECLEAN"
       - name: Build binary
         working-directory: server
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ms-cae.amd64 main.go
