@@ -25,26 +25,20 @@ jobs:
       - name: Set Environment Variables
         run: echo "TAGMESSAGE=$(git tag -l --format='%(contents:subject)' ${{github.ref_name}})" >> $GITHUB_ENV
       - name: Set Environment Variables 2
-        run: echo "TAGVERSION=${{ github.ref_name }}" >> $GITHUB_ENV
-      - name: Set Environment Variables 2
-        run: echo "TAGVERSIONCLEAN=${TAGVERSION//./-}" >> $GITHUB_ENV
-      - name: Set Environment Variables 2
-        run: echo "GITHUBREFNAMECLEAN=${GITHUB_REF_NAME//./-}" >> $GITHUB_ENV
+        run: echo "VERSION=${GITHUB_REF_NAME//./-}" >> $GITHUB_ENV
       - name: Echo
-        run: echo "The value of TAGVERSIONCLEAN is $TAGVERSIONCLEAN"        
-      - name: Echo
-        run: echo "The value of GITHUBREFNAMECLEAN is $GITHUBREFNAMECLEAN"
+        run: echo "The value of VERSION is $VERSION"        
       - name: Build binary
         working-directory: server
-        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ms-cae.amd64 main.go
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ms-cae-$VERSION.amd64 main.go
       - name: Create release
         id: create
-        run: curl -X POST -H "Accept:application/vnd.github+json" -H "Authorization:token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/matthewhunter404/cvital/releases -d '{"tag_name":"${{ github.ref_name }}","target_commitish":"main","name":"${{ github.ref_name }}","body":"${{ env.TAGNAME }}","draft":false,"prerelease":false,"generate_release_notes":false}'
+        run: curl -X POST -H "Accept:application/vnd.github+json" -H "Authorization:token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/matthewhunter404/cvital/releases -d '{"tag_name":"${{ github.ref_name }}","target_commitish":"main","name":"${{ github.ref_name }}","body":"${{ env.TAGMESSAGE }}","draft":false,"prerelease":false,"generate_release_notes":false}'
       - name: Upload Release Asset
         if: steps.create.outcome == 'success'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          for f in $(find server/ -name 'ms-cae.amd64'); do
+          for f in $(find server/ -name 'ms-cae-$VERSION.amd64'); do
             gh release upload ${{ github.ref_name }} $f
           done
